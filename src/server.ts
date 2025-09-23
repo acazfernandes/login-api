@@ -13,31 +13,31 @@ app.use(express.json());
 
 // Rota de teste que já tínhamos
 app.get('/', (req, res) => {
-    res.send('A API está funcionando!');
+  res.send('A API está funcionando!');
 });
 
 // 4 ROTA DE CADASTRO (POST) QUE ESTAVA FALTANDO
 app.post('/users', async (req, res) => {
-    try {
-        const { email, password } = req.body;
+  try {
+    const { email, password } = req.body;
 
-        const newUser = await prisma.user.create({
-            data: {
-                email: email,
-                password: password, // Lembrete: ainda vamos criptografar isso
-            },
-        });
+    const newUser = await prisma.user.create({
+      data: {
+        email: email,
+        password: password, // Lembrete: ainda vamos criptografar isso
+      },
+    });
 
-        // Retorna o usuário criado com o status 201 (Created)
-        res.status(201).json(newUser);
-
-    } catch (error) {
-        // Se der um erro (ex: email já existe), retorna um erro
-        res.status(400).json({ error: 'Não foi possível criar o usuário. O email pode já estar em uso.' });
-    }
+    // Retorna o usuário criado com o status 201 (Created)
+    res.status(201).json(newUser);
+  } catch (_error) {
+    // Se der um erro (ex: email já existe), retorna um erro
+    res.status(400).json({
+      error: 'Não foi possível criar o usuário. O email pode já estar em uso.',
+    });
+  }
 });
 
-
 app.listen(port, () => {
-    console.log(`🚀 Servidor rodando em http://localhost:${port}`);
+  console.log(`🚀 Servidor rodando em http://localhost:${port}`);
 });
