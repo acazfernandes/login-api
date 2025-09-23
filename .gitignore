@@ -1,0 +1,16 @@
+# Arquivos de log
+*.log
+npm-debug.log*
+
+# Dependências
+/node_modules
+
+# Arquivo de segredos e senhas
+.env
+
+# Pasta de build do TypeScript (para o futuro)
+/dist
+
+# Arquivos de sistema operacional
+.DS_Store
+Thumbs.db
