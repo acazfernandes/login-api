@@ -1,40 +1,74 @@
 import express from 'express';
-// 1 Importamos o Prisma Client
 import { PrismaClient } from '@prisma/client';
+import { hash, compare } from 'bcryptjs';
+import jwt from 'jsonwebtoken'; // <- MUDANÇA 1: Importação corrigida
 
-// 2 Criamos uma instância do Prisma
 const prisma = new PrismaClient();
-
 const app = express();
 const port = 3000;
 
-// 3 Adicionamos o middleware para o Express entender JSON
 app.use(express.json());
 
-// Rota de teste que já tínhamos
 app.get('/', (req, res) => {
   res.send('A API está funcionando!');
 });
 
-// 4 ROTA DE CADASTRO (POST) QUE ESTAVA FALTANDO
+// ROTA DE CADASTRO (POST /users)
 app.post('/users', async (req, res) => {
   try {
-    const { email, password } = req.body;
-
+    const { name, email, password } = req.body;
+    const password_hash = await hash(password, 8);
     const newUser = await prisma.user.create({
-      data: {
-        email: email,
-        password: password, // Lembrete: ainda vamos criptografar isso
-      },
+      data: { name, email, password_hash },
     });
 
-    // Retorna o usuário criado com o status 201 (Created)
-    res.status(201).json(newUser);
+    const userWithoutPassword = {
+      id: newUser.id,
+      name: newUser.name,
+      email: newUser.email,
+      createdAt: newUser.createdAt,
+      updatedAt: newUser.updatedAt
+    }
+    res.status(201).json(userWithoutPassword);
   } catch (_error) {
-    // Se der um erro (ex: email já existe), retorna um erro
     res.status(400).json({
       error: 'Não foi possível criar o usuário. O email pode já estar em uso.',
     });
+  }
+});
+
+// ROTA DE LOGIN (POST /sessions)
+app.post('/sessions', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await prisma.user.findUnique({
+      where: { email: email },
+    });
+
+    if (!user) {
+      return res.status(400).json({ error: 'Credenciais inválidas.' });
+    }
+
+    const passwordMatch = await compare(password, user.password_hash);
+
+    if (!passwordMatch) {
+      return res.status(400).json({ error: 'Credenciais inválidas.' });
+    }
+
+    // MUDANÇA 2: Usamos jwt.sign em vez de apenas sign
+    const token = jwt.sign(
+      { name: user.name, email: user.email },
+      process.env.JWT_SECRET as string,
+      {
+        subject: user.id,
+        expiresIn: '1d',
+      }
+    );
+    
+    return res.status(200).json({ token });
+
+  } catch (error) {
+    return res.status(500).json({ error: 'Erro interno do servidor.' });
   }
 });
 
